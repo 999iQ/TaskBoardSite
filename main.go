@@ -21,9 +21,11 @@ func addDeadlineButtonPress(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Метод запроса не поддерживается", http.StatusMethodNotAllowed)
 		return
 	}
-	datetime := r.FormValue("datetime-input") // получение данных из формы
-	w.Write([]byte(fmt.Sprintf("Кнопка была нажата! %s", datetime)))
-	fmt.Println("Кнопка была нажата! Дата и время:", datetime)
+	datetime := r.FormValue("datetime-input") // получение даты дедлайна из формы
+	taskName := r.FormValue("task-name")
+	taskDescription := r.FormValue("task-description")
+	w.Write([]byte(fmt.Sprintf("Кнопка была нажата! %s\n%s\n%s", datetime, taskName, taskDescription)))
+	fmt.Printf("Кнопка была нажата! Информация о созданном дедлайне: \n%s\n%s\n%s", taskName, datetime, taskDescription)
 }
 
 func handleRequest() {
