@@ -1,5 +1,5 @@
 
-const body = document.querySelector('body')
+const body = document.querySelector('body') // тело страницы для добавления туда новых форм дедлайнов
 
 const tasks= {
     item1: {
@@ -10,7 +10,7 @@ const tasks= {
     }
 }
 
-function createFormDeadline(taskName, deadline, stars) {
+function createFormDeadline(taskName, deadline, stars) { // создание ui дедлайна
     const  div = document.createElement('div')
     div.style.cssText = `
       width: 200px;
@@ -32,8 +32,8 @@ buttonAddDeadline.addEventListener('click', function () // обработчик 
     const taskName = document.getElementById('task-name').value;
     const deadline = document.getElementById('datetime-input').value
     createFormDeadline(taskName, deadline);
-    fetch('/process', {method: 'POST', body: new FormData(formDataElem)}) // отправка данных пост запросом
-        .then(response => response.text())
-        .then(data => alert(data))
-        .catch(error => console.error('Ошибка:', error));
+
+    fetch('/process', {method: 'POST', body: new FormData(formDataElem)}) // асинхронная отправка данных на go-сервер
+        .then(response => response.text()) // вывод ответа от сервера
+        .catch(error => console.error('Ошибка:', error)); // вывод ошибки, в случае ошибки
 });
