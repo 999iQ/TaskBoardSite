@@ -2,47 +2,44 @@ package main
 
 import (
 	"fmt"
-	"html/template"
+	"github.com/gofiber/fiber/v2"
 	"log"
-	"net/http"
 )
 
-type user struct {
-	name  string
-	email string
+func homePage(ctx *fiber.Ctx) error {
+	return ctx.Render("templates/homePage.html", nil)
 }
 
-func home_page(w http.ResponseWriter, r *http.Request) {
-	tmpl := template.Must(template.ParseFiles("templates/home_page.html"))
-	tmpl.ExecuteTemplate(w, "home_page.html", nil)
-}
-
-func add_deadline(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost { // например сразу перешли по адресу отправки данных кнопкой при нажатии, но без нажатия
-		http.Error(w, "Метод запроса не поддерживается", http.StatusMethodNotAllowed)
-		return
+func addDeadline(ctx *fiber.Ctx) error {
+	if ctx.Method() != fiber.MethodPost { // перешли на api по адресу отправки данных (с методом get)
+		return ctx.Status(fiber.StatusMethodNotAllowed).JSON(fiber.Map{
+			"error": "Метод запроса не поддерживается!",
+		})
 	}
 
-	datetime := r.FormValue("datetime-input") // получение даты дедлайна из формы
-	taskName := r.FormValue("task-name")
-	taskDescription := r.FormValue("task-description")
+	datetime := ctx.FormValue("datetime-input") // получение даты дедлайна из формы
+	taskName := ctx.FormValue("task-name")
+	taskDescription := ctx.FormValue("task-description")
 
-	w.Write([]byte(fmt.Sprintf("Добавлен новый дедлайн.\nДата конца: %s\nНазвание: %s\nОписание: %s", datetime, taskName, taskDescription))) // ответ сервера
-	log.Printf("Добавлен новый дедлайн.\nДата конца: %s\nНазвание: %s\nОписание: %s", taskName, datetime, taskDescription)                   // вывод в консоль
+	log.Printf("Добавлен новый дедлайн.\nДата конца: %s\nНазвание: %s\nОписание: %s", taskName, datetime, taskDescription)                         // вывод в консоль
+	return ctx.SendString(fmt.Sprintf("Добавлен новый дедлайн.\nДата конца: %s\nНазвание: %s\nОписание: %s", datetime, taskName, taskDescription)) // ответ сервера
 }
 
-func handle_request() {
-	// шарим папку static, чтобы передать js скрипт в этой папке
-	fileServer := http.FileServer(http.Dir("static"))
-	http.Handle("/static/", http.StripPrefix("/static/", fileServer))
-
-	http.HandleFunc("/", home_page)
-	http.HandleFunc("/process", add_deadline)
+func setupRoutes(app *fiber.App) {
+	app.Static("/static", "./static") // шарим папку static, для передачи js скрипта
+	app.Get("/", homePage)
+	app.Post("/api/addDeadline", addDeadline) // техническая ссылка для передачи данных post запросами
 	log.Println("Сервер запущен на порту 8080")
-	http.ListenAndServe(":8080", nil)
+	app.Listen(":8080")
 }
 
 func main() {
 	log.SetFlags(log.LstdFlags | log.Lshortfile) // настройка логгирования для вывода строки в коде
-	handle_request()
+	app := fiber.New(fiber.Config{
+		Prefork:       true,    // включаем предварительное форкование для увеличения производительности на многоядерных процессорах (проще говоря запуск на всех ядрах процессора)
+		ServerHeader:  "Fiber", // добавляем заголовок для идентификации сервера
+		CaseSensitive: true,    // включаем чувствительность к регистру в URL
+		StrictRouting: true,    // включаем строгую маршрутизацию
+	})
+	setupRoutes(app)
 }

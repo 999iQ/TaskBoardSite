@@ -33,7 +33,7 @@ buttonAddDeadline.addEventListener('click', function () // обработчик 
     const deadline = document.getElementById('datetime-input').value
     createFormDeadline(taskName, deadline);
 
-    fetch('/process', {method: 'POST', body: new FormData(formDataElem)}) // асинхронная отправка данных на go-сервер
+    fetch('/api/addDeadline', {method: 'POST', body: new FormData(formDataElem)}) // асинхронная отправка данных на go-сервер
         .then(response => response.text()) // вывод ответа от сервера
         .catch(error => console.error('Ошибка:', error)); // вывод ошибки, в случае ошибки
 });
