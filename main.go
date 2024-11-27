@@ -22,9 +22,9 @@ type Task struct {
 	Task_id      uint   `gorm:"primaryKey"`
 	User_id      uint   `gorm:"foreignKey"`
 	Title        string `gorm:"not null"`
-	Decription   string
+	Description  string
 	Priority     uint      `gorm:"default:0"`
-	DeadlineDate time.Time `gorm:"not null"`
+	Deadlinedate time.Time `gorm:"not null"`
 	Createdat    time.Time `gorm:"autoCreateTime"`
 	Updatedat    time.Time `gorm:"autoUpdateTime"`
 }
@@ -40,12 +40,45 @@ func addDeadline(ctx *fiber.Ctx) error {
 		})
 	}
 
-	datetime := ctx.FormValue("datetime-input") // получение даты дедлайна из формы
 	taskName := ctx.FormValue("task-name")
 	taskDescription := ctx.FormValue("task-description")
+	deadline, _ := time.Parse("2006-01-02T15:04", ctx.FormValue("datetime-input")) // получение даты дедлайна из формы // time.RFC3339 используется для парсинга строк в формате ISO 8601
+	var priority uint
+	fmt.Sscan(ctx.FormValue("priority"), &priority) // приведение строки к uint
 
-	log.Printf("Добавлен новый дедлайн.\nНазвание: %s\nДата конца: %s\nОписание: %s", taskName, datetime, taskDescription)                         // вывод в консоль
-	return ctx.SendString(fmt.Sprintf("Добавлен новый дедлайн.\nДата конца: %s\nНазвание: %s\nОписание: %s", datetime, taskName, taskDescription)) // ответ сервера
+	// сохранение полученных данных о дедлайне в БД
+	db := connectDB()
+	defer db.Close() // отложенное отклчючение от бд (пока не вышли из текущей функции)
+
+	var lastTask Task
+	db.Table("tasks").Last(&lastTask) // получение последней записи (обратная сортировка {desk} по id)
+	newUser := Task{
+		Task_id:      lastTask.Task_id + 1,
+		User_id:      1,
+		Title:        taskName,
+		Description:  taskDescription,
+		Priority:     priority,
+		Deadlinedate: deadline,
+		Createdat:    time.Now(),
+		Updatedat:    time.Now(),
+	}
+	result := db.Create(&newUser)
+	if result.Error != nil {
+		panic("failed to create tasks")
+	}
+	printDBtableTasks(db)
+
+	log.Printf("Добавлен новый дедлайн."+
+		"\nНазвание: %s"+
+		"\nДата конца: %s"+
+		"\nОписание: %s"+
+		"\nПриоритет: %d", taskName, deadline, taskDescription, priority) // вывод в консоль
+
+	return ctx.SendString(fmt.Sprintf("Добавлен новый дедлайн."+
+		"\nНазвание: %s"+
+		"\nДата конца: %s"+
+		"\nОписание: %s"+
+		"\nПриоритет: %d", taskName, deadline, taskDescription, priority))
 }
 
 func setupRoutes(app *fiber.App) {
@@ -81,6 +114,20 @@ func printDBtableUsers(db *gorm.DB) {
 	}
 }
 
+func printDBtableTasks(db *gorm.DB) {
+	// поиск записей в бд
+	var tasks []Task
+	err := db.Find(&tasks).Error
+	if err != nil {
+		log.Fatal("Failed to fetch records:", err)
+	}
+	// вывод записей из бд
+	for _, user := range tasks {
+		log.Println(user)
+		//log.Println(fmt.Sprintf("id: %d, nickname: %s, email: %s, passwordhash: %s", user.User_id, user.Nickname, user.Email, user.Passwordhash))
+	}
+}
+
 func startServer() {
 	app := fiber.New(fiber.Config{
 		Prefork:       false,   // включаем предварительное форкование для увеличения производительности на многоядерных процессорах (проще говоря запуск на всех ядрах процессора)
@@ -94,6 +141,5 @@ func startServer() {
 func main() {
 	log.SetFlags(log.LstdFlags | log.Lshortfile) // настройка логирования для вывода строки в коде
 	startServer()
-	db := connectDB()
-	defer db.Close() // отложенное отклчючение от бд (пока не вышли из текущей функции)
+
 }
