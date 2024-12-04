@@ -8,26 +8,39 @@
     <title>Главная страница</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet"
           integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
+    <link rel="stylesheet" type="text/css" href="../static/css/style.css">
 </head>
-<body style="background-color: #4F4F4F">
-<h1>Главная страница</h1>
+<body>
 
-<form id="datetime-form" method="post">
-    <label for="task-name">Название</label>
-    <input type="text" id="task-name" name="task-name">
+<div class="main-content">
+    <!-- Основной контент страницы -->
+    <h1>Дедлайны</h1>
+    <button class="create-button" type="button" id="createDeadline">Создать</button>
+</div>
 
-    <label for="datetime-input">Конец дедлайна</label>
-    <input type="datetime-local" id="datetime-input" name="datetime-input">
+<div class="sidebar">
+    <!--  форма для добавления/изменения/удаления дедлайна в правой части экрана  -->
+    <form id="datetime-form" method="post" data-id="">
+        <label for="task-name">Название</label>
+        <textarea maxlength="255"  id="task-name" name="task-name"></textarea>
 
-    <label for=1>Важность</label>
-    <input type="radio" name="slider" id=1>
-    <input type="radio" name="slider" id=2>
-    <input type="radio" name="slider" id=3>
+        <label for="datetime-input">Конец дедлайна</label>
+        <input type="datetime-local" id="datetime-input" name="datetime-input">
 
-    <label for="task-description">Описание</label>
-    <input type="text" id="task-description" name="task-description">
-    <button type="button" id="addDeadline">Добавить дедлайн</button>
-</form>
+        <label>Приоритет</label>
+        <input type="radio" class="radio-star" name="slider" id="0" checked>
+        <input type="radio" class="radio-star" name="slider" id="1">
+        <input type="radio" class="radio-star" name="slider" id="2">
+        <input type="radio" class="radio-star" name="slider" id="3">
+
+        <label for="task-description">Описание</label>
+        <textarea maxlength="2000" id="task-description" name="task-description"></textarea>
+        <button class="cancel-button" type="button" id="cancelDeadline">Отмена</button>
+        <button class="add-button" type="button" id="addDeadline">Добавить</button>
+        <button class="delete-button" type="button" id="deleteDeadline" hidden>Удалить</button>
+        <button class="edit-button" type="button" id="editDeadline" hidden>Изменить</button>
+    </form>
+</div>
 
 <script src="../static/js/app.js"></script>
 
