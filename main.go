@@ -1,11 +1,13 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/gofiber/fiber/v2"
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
 	"log"
+	"os"
 	"time"
 )
 
@@ -19,15 +21,15 @@ type User struct {
 }
 
 type Task struct {
-	Task_id      uint   `gorm:"primaryKey"`
-	User_id      uint   `gorm:"foreignKey"`
-	Title        string `gorm:"not null"`
-	Description  string
+	Task_id      uint      `gorm:"primaryKey"`
+	User_id      uint      `gorm:"foreignKey"`
+	Title        string    `gorm:"not null"`
+	Description  string    `gorm:"column:description"`
 	Priority     uint      `gorm:"default:0"`
 	Deadlinedate time.Time `gorm:"not null"`
 	Createdat    time.Time `gorm:"autoCreateTime"`
 	Updatedat    time.Time `gorm:"autoUpdateTime"`
-	Status       bool      `gorm:"default:false"`
+	Status       bool      `gorm:"column:status"`
 }
 
 func homePage(ctx *fiber.Ctx) error {
@@ -73,10 +75,9 @@ func addAndEditDeadline(ctx *fiber.Ctx) error {
 	db := connectDB()
 	defer db.Close() // отложенное отклчючение от бд (пока не вышли из текущей функции)
 
-	var lastTaskId Task
-	db.Table("tasks").Order("Task_id desc").Last(&lastTaskId) // получение последней записи (обратная сортировка {desk} по id)
-
 	if task_id == 0 { // если поле id пустое => добавляем таску
+		var lastTaskId Task
+		db.Table("tasks").Order("Task_id desc").Last(&lastTaskId) // получение последней записи (обратная сортировка {desk} по id)
 		newTask := Task{
 			Task_id:      lastTaskId.Task_id + 1,
 			User_id:      1,
@@ -94,29 +95,56 @@ func addAndEditDeadline(ctx *fiber.Ctx) error {
 		}
 		log.Printf("Дедлайн с id:%d был изменён в бд", lastTaskId.Task_id+1)
 	} else {
-		var task Task
-		err := db.Table("tasks").Where("Task_id = ?", task_id).Find(&task).Limit(1).Error // Находим запись по ID
+		var editTask Task
+		err := db.Table("tasks").Where("Task_id = ?", task_id).Find(&editTask).Limit(1).Error // Находим запись по ID
 		if err != nil {
 			panic("failed to find tasks for edit") // Обработка ошибки, если запись не найдена
 		}
+		log.Printf(editTask.Title, editTask.Status, status)
 		// изменение значений записи в бд
-		task.Title = taskName
-		task.Description = taskDescription
-		task.Priority = priority
-		task.Deadlinedate = deadline
-		task.Updatedat = time.Now()
-		task.Status = status
-		err = db.Table("tasks").Where("Task_id = ?", task_id).Updates(&task).Error // сохраняем изменения
+		editTask.Title = taskName
+		editTask.Description = taskDescription
+		editTask.Priority = priority
+		editTask.Deadlinedate = deadline
+		editTask.Updatedat = time.Now()
+		editTask.Status = status
+
+		err = db.Table("tasks").Where("Task_id = ?", task_id).Updates(&editTask).Error // сохраняем изменения
+		if err != nil {
+			panic("failed to find tasks for edit") // Обработка ошибки, если запись не найдена
+		}
+		// сохраняем статус отдельно (т.к он почему-то не хочет сохраняться сразу со всеми)
+		err = db.Table("tasks").Where("Task_id = ?", task_id).UpdateColumn("status", status).Error
+		if err != nil {
+			panic("failed to find tasks for edit") // Обработка ошибки, если запись не найдена
+		}
+		// сохраняем приоритет отдельно (т.к он почему-то не хочет сохраняться сразу со всеми)
+		err = db.Table("tasks").Where("Task_id = ?", task_id).UpdateColumn("priority", priority).Error
+		if err != nil {
+			panic("failed to find tasks for edit") // Обработка ошибки, если запись не найдена
+		}
+
 		log.Printf("Дедлайн с id:%d был изменён в бд", task_id)
 		return err
 	}
-
 	return ctx.SendString(fmt.Sprintf("Дедлайн с id:%d был изменён в бд", task_id))
 }
 
 func connectDB() *gorm.DB {
+	fileConfig, err := os.ReadFile("config.json") // чтение конф. данных из конфига
+	var jsonConfig map[string]interface{}
+	json.Unmarshal(fileConfig, &jsonConfig)
+
 	// Подключение к базе данных postgresql
-	dsn := "host=localhost user=postgres password=1234 dbname=task_board_site port=5432 sslmode=disable"
+	dsn := fmt.Sprintf(
+		"host=%s user=%s password=%s dbname=%s port=%s sslmode=disable",
+		jsonConfig["host"],
+		jsonConfig["user"],
+		jsonConfig["password"],
+		jsonConfig["dbname"],
+		jsonConfig["port"],
+	)
+
 	db, err := gorm.Open("postgres", dsn)
 	if err != nil {
 		log.Fatal("Failed to connect to database:", err)
@@ -139,7 +167,7 @@ func getUsersFromDB(db *gorm.DB) {
 	}
 }
 
-func GetTasksFromDB(ctx *fiber.Ctx) error { // /api/getTasks // выдача списка задач в json'e для конкретного юзера
+func sendTasksFromDB(ctx *fiber.Ctx) error { // /api/getTasks // выдача списка задач в json'e для конкретного юзера
 	db := connectDB()
 	defer db.Close()
 
@@ -147,7 +175,7 @@ func GetTasksFromDB(ctx *fiber.Ctx) error { // /api/getTasks // выдача с�
 	var taskId uint
 	fmt.Sscan(ctx.Params("id"), &taskId) // изъятие параметра айди таски через слеш
 	if taskId == 0 {                     // 0 для отдачи всех тасок
-		err := db.Find(&tasks).Error // сбор записей таблицы задач из бд в массив
+		err := db.Order("deadlinedate").Find(&tasks).Error // сбор записей таблицы задач из бд в массив
 		if err != nil {
 			log.Fatal("Failed to fetch records:", err)
 		}
@@ -158,9 +186,9 @@ func GetTasksFromDB(ctx *fiber.Ctx) error { // /api/getTasks // выдача с�
 		}
 	}
 
-	for i, _ := range tasks { // *ВАЖНО* изменение даты дедлайнов (ставим наш час. пояс) - 3часа
-		tasks[i].Deadlinedate = tasks[i].Deadlinedate.Add(-3 * time.Hour)
-	}
+	//for i, _ := range tasks { // *ВАЖНО* изменение даты дедлайнов (ставим наш час. пояс) - 3часа
+	//	tasks[i].Deadlinedate = tasks[i].Deadlinedate.Add(-3 * time.Hour)
+	//}
 
 	return ctx.JSON(tasks)
 }
@@ -170,7 +198,7 @@ func setupRoutes(app *fiber.App) {
 	app.Get("/", homePage)
 	app.Post("/api/addAndEditDeadline", addAndEditDeadline) // техническая ссылка для передачи данных post запросами
 	app.Post("/api/deleteDeadline/:id", deleteDeadline)
-	app.Get("/api/getTasks/:id", GetTasksFromDB) // отдача списка задач из бд фронту
+	app.Get("/api/getTasks/:id", sendTasksFromDB) // отдача списка задач из бд фронту
 	log.Println("Сервер запущен на порту 8080")
 	app.Listen(":8080")
 }
