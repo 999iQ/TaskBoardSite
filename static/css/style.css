@@ -1,12 +1,12 @@
-@import url('https://fonts.googleapis.com/css2?family=Tiny5&display=swap'); /* шрифт Tiny5 */
+@import url('https://fonts.googleapis.com/css2?family=Caveat:wght@400..700&family=Roboto:ital,wght@0,100;0,300;0,400;0,500;0,700;0,900;1,100;1,300;1,400;1,500;1,700;1,900&family=Tiny5&display=swap');
 
 body {
     background-color: #3e3e3f;
     display: flex; /* Используем flexbox */
     height: 100vh; /* Занимаем всю высоту экрана */
     margin: 0;
-    font-family: "Tiny5", sans-serif;
-    font-weight: 200;
+    font-family: "Roboto", sans-serif;
+    font-weight: 500;
     font-style: normal;
     color: #01a361;
 }
@@ -35,11 +35,16 @@ body {
 }
 .task-timer {
     display: flex;
-    position: absolute;
+    position: relative;
     margin-left: auto;
     right: 0;
 }
-
+.task-text-delay {
+    position: absolute;
+    font-size: 14px;
+    transform: translate(-30px, 22px);
+    color: #de3d29;
+}
 .task-check-box {
     display: flex;
     position: absolute;
@@ -50,10 +55,11 @@ body {
     background-color: #353536;
 }
 .task-stars {
-    display: flex;
     margin-left: auto;
     margin-block: auto;
     padding-inline: 5px;
+    width: 55px;
+    height: 27px;
     color: #01a361;
 }
 .task-time-box {
@@ -72,11 +78,11 @@ body {
     margin-top: -12px;
 }
 .sidebar {
-    font-size: 20px;
+    font-size: 24px;
     position: fixed;
     right: 0;
     height: 100%;
-    width: 300px; /* Ширина бокового меню */
+    width: 400px; /* Ширина бокового меню */
     background-color: #4e4e4f;
     padding: 20px;
     overflow-y: auto; /* Добавляем полосы прокрутки, если контент превышает высоту */
@@ -111,7 +117,7 @@ textarea {
     padding: 10px;
     border: 2px solid #2b2b2c;
     background-color: #353535;
-    font-size: 16px;
+    font-size: 20px;
     border-radius: 15px;
     color: #FFFFFF;
 }
@@ -138,7 +144,7 @@ textarea {
 .cancel-button {
     color: #FFFFFF;
     background-color: #3e3e3e;
-    width: 100px;
+    width: 110px;
     height: 40px;
     margin-right: auto;
     border-radius: 15px;
@@ -146,7 +152,7 @@ textarea {
 .add-button {
     color: #FFFFFF;
     background-color: #01a361;
-    width: 100px;
+    width: 130px;
     height: 40px;
     margin-left: auto;
     border-radius: 15px;
@@ -155,7 +161,7 @@ textarea {
 .edit-button {
     color: #FFFFFF;
     background-color: #01a361;
-    width: 100px;
+    width: 130px;
     height: 40px;
     margin-right: auto;
     border-radius: 15px;
@@ -163,7 +169,7 @@ textarea {
 .delete-button {
     color: #ffffff;
     background-color: #3e3e3f;
-    width: 100px;
+    width: 120px;
     height: 40px;
     margin-left: auto;
     border-radius: 15px;
