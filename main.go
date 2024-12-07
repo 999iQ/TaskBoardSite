@@ -12,24 +12,24 @@ import (
 )
 
 type User struct {
-	User_id      uint      `gorm:"primaryKey"`
+	UserId       uint      `gorm:"primaryKey"`
 	Nickname     string    `gorm:"not null"`
 	Email        string    `gorm:"not null"`
-	Passwordhash string    `gorm:"not null"`
-	Createdat    time.Time `gorm:"autoCreateTime"`
-	Updatedat    time.Time `gorm:"autoUpdateTime"`
+	PasswordDash string    `gorm:"not null"`
+	CreateDat    time.Time `gorm:"autoCreateTime"`
+	UpdateDat    time.Time `gorm:"autoUpdateTime"`
 }
 
 type Task struct {
-	Task_id      uint      `gorm:"primaryKey"`
-	User_id      uint      `gorm:"foreignKey"`
+	TaskId       uint      `gorm:"primary_key,column:task_id,auto_increment"`
+	UserId       uint      `gorm:"foreign_key"`
 	Title        string    `gorm:"not null"`
 	Description  string    `gorm:"column:description"`
-	Priority     uint      `gorm:"default:0"`
-	Deadlinedate time.Time `gorm:"not null"`
-	Createdat    time.Time `gorm:"autoCreateTime"`
-	Updatedat    time.Time `gorm:"autoUpdateTime"`
-	Status       bool      `gorm:"column:status"`
+	Priority     *uint     `gorm:"default:0"`
+	DeadlineDate time.Time `gorm:"not null,default:CURRENT_TIMESTAMP()"`
+	CreateDat    time.Time `gorm:"autoCreateTime"`
+	UpdateDat    time.Time `gorm:"autoUpdateTime"`
+	Status       *bool
 }
 
 func homePage(ctx *fiber.Ctx) error {
@@ -37,14 +37,11 @@ func homePage(ctx *fiber.Ctx) error {
 }
 
 func deleteDeadline(ctx *fiber.Ctx) error {
-	db := connectDB()
-	defer db.Close()
-
 	var tasks []Task
 	var taskId uint
 	fmt.Sscan(ctx.Params("id"), &taskId) // изъятие параметра айди таски через слеш
 
-	err := db.Where("Task_id = ?", taskId).Delete(&tasks).Error // сбор записей таблицы задач из бд в массив
+	err := DB.Where("task_id = ?", taskId).Delete(&tasks).Error // сбор записей таблицы задач из бд в массив
 	if err != nil {
 		log.Fatal("Failed to fetch records:", err)
 	}
@@ -69,59 +66,43 @@ func addAndEditDeadline(ctx *fiber.Ctx) error {
 	var status bool
 	fmt.Sscan(ctx.FormValue("status"), &status)
 
-	log.Println(task_id, taskName, taskDescription, deadline, status, priority)
+	log.Printf("Полученные данные из formValue:\n%s | %s | %s | %s | %s", task_id, taskName, taskDescription, deadline, status, priority)
 
 	// сохранение полученных данных о дедлайне в БД
-	db := connectDB()
-	defer db.Close() // отложенное отклчючение от бд (пока не вышли из текущей функции)
-
 	if task_id == 0 { // если поле id пустое => добавляем таску
 		var lastTaskId Task
-		db.Table("tasks").Order("Task_id desc").Last(&lastTaskId) // получение последней записи (обратная сортировка {desk} по id)
+		DB.Table("tasks").Order("task_id desc").Last(&lastTaskId) // получение последней записи (обратная сортировка {desk} по id)
 		newTask := Task{
-			Task_id:      lastTaskId.Task_id + 1,
-			User_id:      1,
+			UserId:       1,
 			Title:        taskName,
 			Description:  taskDescription,
-			Priority:     priority,
-			Deadlinedate: deadline,
-			Createdat:    time.Now(),
-			Updatedat:    time.Now(),
-			Status:       false,
+			Priority:     &priority,
+			DeadlineDate: deadline,
+			CreateDat:    time.Now(),
+			UpdateDat:    time.Now(),
 		}
-		err := db.Table("tasks").Create(&newTask).Error
+		err := DB.Table("tasks").Create(&newTask).Error
 		if err != nil {
 			panic("failed to create tasks")
 		}
-		log.Printf("Дедлайн с id:%d был изменён в бд", lastTaskId.Task_id+1)
+		log.Printf("Дедлайн с id:%d был изменён в бд", lastTaskId.TaskId+1)
 	} else {
 		var editTask Task
-		err := db.Table("tasks").Where("Task_id = ?", task_id).Find(&editTask).Limit(1).Error // Находим запись по ID
+		err := DB.Table("tasks").Where("task_id = ?", task_id).First(&editTask).Error // Находим запись по ID
 		if err != nil {
 			panic("failed to find tasks for edit") // Обработка ошибки, если запись не найдена
 		}
-		log.Printf(editTask.Title, editTask.Status, status)
 		// изменение значений записи в бд
 		editTask.Title = taskName
 		editTask.Description = taskDescription
-		editTask.Priority = priority
-		editTask.Deadlinedate = deadline
-		editTask.Updatedat = time.Now()
-		editTask.Status = status
+		editTask.Priority = &priority
+		editTask.DeadlineDate = deadline
+		editTask.UpdateDat = time.Now()
+		editTask.Status = &status
 
-		err = db.Table("tasks").Where("Task_id = ?", task_id).Updates(&editTask).Error // сохраняем изменения
+		err = DB.Table("tasks").Where("task_id = ?", task_id).Updates(&editTask).Error // сохраняем изменения
 		if err != nil {
-			panic("failed to find tasks for edit") // Обработка ошибки, если запись не найдена
-		}
-		// сохраняем статус отдельно (т.к он почему-то не хочет сохраняться сразу со всеми)
-		err = db.Table("tasks").Where("Task_id = ?", task_id).UpdateColumn("status", status).Error
-		if err != nil {
-			panic("failed to find tasks for edit") // Обработка ошибки, если запись не найдена
-		}
-		// сохраняем приоритет отдельно (т.к он почему-то не хочет сохраняться сразу со всеми)
-		err = db.Table("tasks").Where("Task_id = ?", task_id).UpdateColumn("priority", priority).Error
-		if err != nil {
-			panic("failed to find tasks for edit") // Обработка ошибки, если запись не найдена
+			panic("failed to update task") // Обработка ошибки, если запись не найдена
 		}
 
 		log.Printf("Дедлайн с id:%d был изменён в бд", task_id)
@@ -131,6 +112,7 @@ func addAndEditDeadline(ctx *fiber.Ctx) error {
 }
 
 func connectDB() *gorm.DB {
+
 	fileConfig, err := os.ReadFile("config.json") // чтение конф. данных из конфига
 	var jsonConfig map[string]interface{}
 	json.Unmarshal(fileConfig, &jsonConfig)
@@ -153,10 +135,10 @@ func connectDB() *gorm.DB {
 	return db
 }
 
-func getUsersFromDB(db *gorm.DB) {
+func getUsersFromDB(DB *gorm.DB) {
 	// поиск записей в бд
 	var users []User
-	err := db.Find(&users).Error
+	err := DB.Find(&users).Error
 	if err != nil {
 		log.Fatal("Failed to fetch records:", err)
 	}
@@ -168,28 +150,20 @@ func getUsersFromDB(db *gorm.DB) {
 }
 
 func sendTasksFromDB(ctx *fiber.Ctx) error { // /api/getTasks // выдача списка задач в json'e для конкретного юзера
-	db := connectDB()
-	defer db.Close()
-
 	var tasks []Task
 	var taskId uint
 	fmt.Sscan(ctx.Params("id"), &taskId) // изъятие параметра айди таски через слеш
 	if taskId == 0 {                     // 0 для отдачи всех тасок
-		err := db.Order("deadlinedate").Find(&tasks).Error // сбор записей таблицы задач из бд в массив
+		err := DB.Order("deadline_date").Find(&tasks).Error // сбор записей таблицы задач из бд в массив
 		if err != nil {
 			log.Fatal("Failed to fetch records:", err)
 		}
 	} else { // конкретный id таски
-		err := db.Where("Task_id = ?", taskId).Find(&tasks).Error // сбор записей таблицы задач из бд в массив
+		err := DB.Where("task_id = ?", taskId).Find(&tasks).Error // сбор записей таблицы задач из бд в массив
 		if err != nil {
 			log.Fatal("Failed to fetch records:", err)
 		}
 	}
-
-	//for i, _ := range tasks { // *ВАЖНО* изменение даты дедлайнов (ставим наш час. пояс) - 3часа
-	//	tasks[i].Deadlinedate = tasks[i].Deadlinedate.Add(-3 * time.Hour)
-	//}
-
 	return ctx.JSON(tasks)
 }
 
@@ -213,7 +187,12 @@ func startServer() {
 	setupRoutes(app)
 }
 
+var DB *gorm.DB
+
 func main() {
 	log.SetFlags(log.LstdFlags | log.Lshortfile) // настройка логирования для вывода строки в коде
+	DB = connectDB()
+	defer DB.Close()
+	DB.AutoMigrate(&Task{})
 	startServer()
 }

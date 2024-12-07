@@ -71,9 +71,9 @@ async function getTasks() { // заполнение списка задач
         await clearTasks() // отчистка списка задач перед заполнением
         // обработка данных => создание форм задач
         tasks.forEach(task => {
-            createFormDeadline(task.Title, task.Deadlinedate, task.Priority, task.Status, task.Task_id) // создание форм списка задач
+            createFormDeadline(task.Title, task.DeadlineDate, task.Priority, task.Status, task.TaskId) // создание форм списка задач
 
-            const elementTimer = document.getElementById(`timer-${task.Task_id}`); // поиск таймера с таким же индексом
+            const elementTimer = document.getElementById(`timer-${task.TaskId}`); // поиск таймера с таким же индексом
             if (task.Status === true){ // убираем таймер и подпись "просрочено" для выполненных задач
                 elementTimer.children[0].hidden = true;
                 elementTimer.children[2].hidden = true;
@@ -81,11 +81,11 @@ async function getTasks() { // заполнение списка задач
                 elementTimer.children[4].hidden = true;
                 elementTimer.children[5].hidden = true;
             } else {
-                const duration = getSecondsUntilDate(task.Deadlinedate); // получаем разницу дат в секундах
+                const duration = getSecondsUntilDate(task.DeadlineDate); // получаем разницу дат в секундах
                 startTimer(duration, elementTimer); // запуск таймера дедлайна
 
                 // работа над вычеслением процента оставщегося времени до дедлайна, с целью окрашивания таймера в нужный цвет
-                getRemainingTimePercentage(task.Createdat, task.Deadlinedate).then(procent => {
+                getRemainingTimePercentage(task.CreateDat, task.DeadlineDate).then(procent => {
                     if (procent <= 10) {
                         elementTimer.style.color = "#fa0005";
                     } else if (procent <= 30) {
@@ -203,12 +203,12 @@ async function setClickableListener(link, id_number) { // функция уст�
                 throw new Error('getTasks response was not ok');
             }
             const task = await response.json(); // парс json'а
-            document.getElementById('datetime-form').dataset.id = task[0].Task_id;
+            document.getElementById('datetime-form').dataset.id = task[0].TaskId;
 
             // заполняем формы, правого окна создания дедлайнов
             document.getElementById('task-name').value = task[0].Title;
             document.getElementById('task-description').value = task[0].Description;
-            document.getElementById('datetime-input').value = new Date(task[0].Deadlinedate).toISOString().slice(0, -5);
+            document.getElementById('datetime-input').value = new Date(task[0].DeadlineDate).toISOString().slice(0, -5);
             document.getElementById(task[0].Priority).checked = true;
 
             // скрываем кнопки для добавления дедлайна
