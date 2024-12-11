@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport"
+        content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>Вход в акканут</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
+  <link rel="stylesheet" type="text/css" href="../static/css/style.css">
+  <link rel="icon" type="image/png" href="../static/images/favicon.png">
+</head>
+<body>
+<div class="login-div">
+  <form id="login-form" class="login-form" method="post">
+    <h2>Вход в аккаунт</h2>
+    <label for="email-log">Электронная почта</label>
+    <input type="text" placeholder="Email" class="text-input-login-page" maxlength="128" id="email-log">
+
+    <label for="password-log">Пароль</label>
+    <input type="password" placeholder="Password" class="text-input-login-page" maxlength="16" id="password-log">
+    <button class="login-button" type="button" id="login-button">Войти</button>
+
+    <a href="" class="clickable-text forget-password">
+      <span class="mini-clickable-text">Забыли пароль?</span>
+    </a>
+
+    <a href="" class="clickable-text create-account-form">
+      <span class="mini-clickable-text">Создать аккаунт</span>
+    </a>
+  </form>
+
+
+  <form id="reg-form" class="login-form" method="post" hidden>
+    <h2>Создание аккаунта</h2>
+    <label for="email-reg">Электронная почта</label>
+    <input type="text" placeholder="Email" class="text-input-login-page" maxlength="128" id="email-reg">
+
+    <label for="nickname">Никнейм</label>
+    <input type="text" placeholder="Nickname" class="text-input-login-page" maxlength="16" id="nickname">
+
+    <label for="password-reg1">Придумайте пароль</label>
+    <input type="text" placeholder="Password" class="text-input-login-page" maxlength="16" id="password-reg1">
+    <label for="password-reg2">Повторите пароль</label>
+    <input type="text" placeholder="Password" class="text-input-login-page" maxlength="16" id="password-reg2">
+
+    <button class="login-button" type="button" id="reg-button">Создать</button>
+
+    <a href="" class="clickable-text i-have-account">
+      <span class="mini-clickable-text">Уже есть аккаунт</span>
+    </a>
+  </form>
+
+</div>
+
+<script src="../static/js/login.js"></script>
+
+</body>
+</html>

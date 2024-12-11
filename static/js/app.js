@@ -64,16 +64,16 @@ async function clearTasks() { // функция отчистки вводимы�
 
 async function getTasks() { // заполнение списка задач
     try {
-        const response = await fetch('/api/getTasks/0');
+        const response = await fetch('/api/getTasks/all');
         if (!response.ok) { throw new Error('getTasks response was not ok'); }
 
         const tasks = await response.json(); // парс json'а
         await clearTasks() // отчистка списка задач перед заполнением
         // обработка данных => создание форм задач
         tasks.forEach(task => {
-            createFormDeadline(task.Title, task.Deadlinedate, task.Priority, task.Status, task.Task_id) // создание форм списка задач
+            createFormDeadline(task.Title, task.DeadlineDate, task.Priority, task.Status, task.TaskId) // создание форм списка задач
 
-            const elementTimer = document.getElementById(`timer-${task.Task_id}`); // поиск таймера с таким же индексом
+            const elementTimer = document.getElementById(`timer-${task.TaskId}`); // поиск таймера с таким же индексом
             if (task.Status === true){ // убираем таймер и подпись "просрочено" для выполненных задач
                 elementTimer.children[0].hidden = true;
                 elementTimer.children[2].hidden = true;
@@ -81,11 +81,11 @@ async function getTasks() { // заполнение списка задач
                 elementTimer.children[4].hidden = true;
                 elementTimer.children[5].hidden = true;
             } else {
-                const duration = getSecondsUntilDate(task.Deadlinedate); // получаем разницу дат в секундах
+                const duration = getSecondsUntilDate(task.DeadlineDate); // получаем разницу дат в секундах
                 startTimer(duration, elementTimer); // запуск таймера дедлайна
 
                 // работа над вычеслением процента оставщегося времени до дедлайна, с целью окрашивания таймера в нужный цвет
-                getRemainingTimePercentage(task.Createdat, task.Deadlinedate).then(procent => {
+                getRemainingTimePercentage(task.CreateDat, task.DeadlineDate).then(procent => {
                     if (procent <= 10) {
                         elementTimer.style.color = "#fa0005";
                     } else if (procent <= 30) {
@@ -136,7 +136,7 @@ async function createFormDeadline(taskName, deadline, priority, status, taskId) 
             <span class="task-time-box" id="seconds"></span>
         </div>
     `;
-    const content_body = document.querySelector('.main-content');
+    const content_body = document.querySelector('.tasks-list-block');
     await content_body.appendChild(div);
 
     // ставим обработчики нажатий на название таски и на чекбокс
@@ -192,7 +192,7 @@ async function setClickableListener(link, id_number) { // функция уст�
         }
         try {
             document.querySelectorAll('a').forEach(otherLink => {
-                otherLink.style.color = '#FFFFFF'; // неактивным таскам возвращаем белый цвет
+                otherLink.style.color = '#d2d2d2'; // неактивным таскам возвращаем белый цвет
             });
             this.style.color = '#01a361'; // выделяю цветом выбранную таску
 
@@ -203,12 +203,12 @@ async function setClickableListener(link, id_number) { // функция уст�
                 throw new Error('getTasks response was not ok');
             }
             const task = await response.json(); // парс json'а
-            document.getElementById('datetime-form').dataset.id = task[0].Task_id;
+            document.getElementById('datetime-form').dataset.id = task[0].TaskId;
 
             // заполняем формы, правого окна создания дедлайнов
             document.getElementById('task-name').value = task[0].Title;
             document.getElementById('task-description').value = task[0].Description;
-            document.getElementById('datetime-input').value = new Date(task[0].Deadlinedate).toISOString().slice(0, -5);
+            document.getElementById('datetime-input').value = new Date(task[0].DeadlineDate).toISOString().slice(0, -5);
             document.getElementById(task[0].Priority).checked = true;
 
             // скрываем кнопки для добавления дедлайна
@@ -275,9 +275,13 @@ async function addAndEditTask() {
     const taskName = document.getElementById('task-name').value;
     const description = document.getElementById('task-description').value;
     const deadline = document.getElementById('datetime-input').value;
-    const taskId = document.getElementById('datetime-form').dataset.id;
-    const status = taskId ? document.getElementById(`checkbox-${taskId}`).checked : false; // если создаём таску, то поле id в форме пустое
-
+    let taskId = document.getElementById('datetime-form').dataset.id;
+    let status = false;
+    if(taskId===""){ // айди в sidebar не задан, => создаем таску
+        taskId = "-1"
+    } else { // изменяем таску => чекбокс соответствует статусу
+        status = document.getElementById(`checkbox-${taskId}`).checked // если создаём таску, то поле id в форме пустое
+    }
     let priority = document.querySelector('input[name="slider"]:checked'); // поиск активного radio-элемента (текущий приоритет задачи)
     priority = priority ? parseInt(priority.id) : 0;
 
