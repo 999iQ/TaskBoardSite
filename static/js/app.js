@@ -64,7 +64,7 @@ async function clearTasks() { // функция отчистки вводимы�
 
 async function getTasks() { // заполнение списка задач
     try {
-        const response = await fetch('/api/getTasks/0');
+        const response = await fetch('/api/getTasks/all');
         if (!response.ok) { throw new Error('getTasks response was not ok'); }
 
         const tasks = await response.json(); // парс json'а
@@ -136,7 +136,7 @@ async function createFormDeadline(taskName, deadline, priority, status, taskId) 
             <span class="task-time-box" id="seconds"></span>
         </div>
     `;
-    const content_body = document.querySelector('.main-content');
+    const content_body = document.querySelector('.tasks-list-block');
     await content_body.appendChild(div);
 
     // ставим обработчики нажатий на название таски и на чекбокс
@@ -192,7 +192,7 @@ async function setClickableListener(link, id_number) { // функция уст�
         }
         try {
             document.querySelectorAll('a').forEach(otherLink => {
-                otherLink.style.color = '#FFFFFF'; // неактивным таскам возвращаем белый цвет
+                otherLink.style.color = '#d2d2d2'; // неактивным таскам возвращаем белый цвет
             });
             this.style.color = '#01a361'; // выделяю цветом выбранную таску
 
@@ -275,9 +275,13 @@ async function addAndEditTask() {
     const taskName = document.getElementById('task-name').value;
     const description = document.getElementById('task-description').value;
     const deadline = document.getElementById('datetime-input').value;
-    const taskId = document.getElementById('datetime-form').dataset.id;
-    const status = taskId ? document.getElementById(`checkbox-${taskId}`).checked : false; // если создаём таску, то поле id в форме пустое
-
+    let taskId = document.getElementById('datetime-form').dataset.id;
+    let status = false;
+    if(taskId===""){ // айди в sidebar не задан, => создаем таску
+        taskId = "-1"
+    } else { // изменяем таску => чекбокс соответствует статусу
+        status = document.getElementById(`checkbox-${taskId}`).checked // если создаём таску, то поле id в форме пустое
+    }
     let priority = document.querySelector('input[name="slider"]:checked'); // поиск активного radio-элемента (текущий приоритет задачи)
     priority = priority ? parseInt(priority.id) : 0;
 
