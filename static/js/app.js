@@ -1,9 +1,20 @@
-const body = document.querySelector('body') // тело страницы для добавления туда новых форм дедлайнов
 
 window.onload = async function() { //срабатывает при загрузке страницы
     await getTasks(); // заполнение списка задач
     console.log(new Date())
 };
+
+function getHeaderWithToken() {
+    const token = localStorage.getItem('token');
+    if (!token) {
+        // Нет токена - перенаправляем на страницу входа
+        window.location.href = '/login';
+        return {};
+    }
+    return { // возвращаем заголовки с JWT токеном
+        'Authorization': `${token}`
+    };
+}
 
 async function startTimer(duration, elementTimer) {
     let startTime = performance.now();
@@ -64,8 +75,12 @@ async function clearTasks() { // функция отчистки вводимы�
 
 async function getTasks() { // заполнение списка задач
     try {
-        const response = await fetch('/api/getTasks/all');
-        if (!response.ok) { throw new Error('getTasks response was not ok'); }
+        const response = await fetch('/api/getTasks/all',
+            {method: "GET", headers: getHeaderWithToken()});
+
+        console.log("getTasks() resp.status = ", response.status)
+
+        if (!response.ok) { throw new Error('func getTasks response status was not ok'); }
 
         const tasks = await response.json(); // парс json'а
         await clearTasks() // отчистка списка задач перед заполнением
@@ -198,7 +213,9 @@ async function setClickableListener(link, id_number) { // функция уст�
 
             document.getElementsByClassName('sidebar')[0].hidden = false; // показывает меню
 
-            const response = await fetch(`/api/getTasks/${id_number}`);
+            const response = await fetch(`/api/getTasks/${id_number}`,
+                {method: "GET", headers: getHeaderWithToken()});
+
             if (!response.ok) {
                 throw new Error('getTasks response was not ok');
             }
@@ -260,7 +277,7 @@ buttonDeleteDeadline.addEventListener('click', async function () // обрабо
     const task_id = document.getElementById('datetime-form').dataset.id;
     clearInputForms();
     document.getElementsByClassName('sidebar')[0].hidden = true; // показывает меню
-    await fetch(`/api/deleteDeadline/${task_id}`, {method: 'POST'});
+    await fetch(`/api/deleteDeadline/${task_id}`, {method: "POST", headers: getHeaderWithToken()});
     await getTasks();
 });
 
@@ -282,8 +299,11 @@ async function addAndEditTask() {
     } else { // изменяем таску => чекбокс соответствует статусу
         status = document.getElementById(`checkbox-${taskId}`).checked // если создаём таску, то поле id в форме пустое
     }
+
     let priority = document.querySelector('input[name="slider"]:checked'); // поиск активного radio-элемента (текущий приоритет задачи)
     priority = priority ? parseInt(priority.id) : 0;
+
+    console.log("Данные из sidebar:\n", taskName, description,deadline)
 
     const formData = new FormData();
     formData.append("task-name", taskName);
@@ -293,9 +313,15 @@ async function addAndEditTask() {
     formData.append("task-id", taskId);
     formData.append("status", status);
 
-    await fetch('/api/addAndEditDeadline', {method: 'POST', body: formData}) // асинхронная отправка данных на go-сервер
+    await fetch('/api/addAndEditDeadline', {method: 'POST', body: formData, headers: getHeaderWithToken()}) // асинхронная отправка данных на go-сервер
         .then(response => response.text()) // вывод ответа от сервера
         .catch(error => console.error('Ошибка:', error)); // вывод ошибки, в случае ошибки
 
     await getTasks(); // отчистка и отрисовка ui тасок
 }
+
+const buttonLogout = document.getElementById("exit-button");
+buttonLogout.addEventListener('click', async function() {
+    localStorage.removeItem('token') // отчистка JWT токена после выхода
+    window.location.href = "/login";
+})

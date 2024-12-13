@@ -1,12 +1,16 @@
 module TaskBoardSite
 
-go 1.22
+go 1.23
+
+toolchain go1.23.4
 
 require github.com/gofiber/fiber/v2 v2.52.5
 
 require (
 	github.com/andybalholm/brotli v1.1.1 // indirect
+	github.com/golang-jwt/jwt/v5 v5.2.1 // indirect
 	github.com/google/uuid v1.6.0 // indirect
+	github.com/gorilla/securecookie v1.1.2 // indirect
 	github.com/jinzhu/gorm v1.9.16 // indirect
 	github.com/jinzhu/inflection v1.0.0 // indirect
 	github.com/klauspost/compress v1.17.11 // indirect
