@@ -1,4 +1,3 @@
-
 // кнопка создать аккаунт
 const buttonCreateFormAccount = document.querySelector(".create-account-form");
 buttonCreateFormAccount.addEventListener('click', async function (event) // обработчик нажатия кнопки
@@ -31,24 +30,29 @@ buttonLoginAccount.addEventListener('click', async function () // обработ
     formData.append("email", email);
     formData.append("password", password);
 
-    const response = await fetch('/api/authorization',
+    const response = await fetch('/authorization',
         {method: 'POST', body: formData});
 
+    console.log("login status POST /authorization: ", response.status)
     if (!response.ok) {
         if (response.status >= 300 && response.status < 400) { // редирект после входа
-            console.log("status", response.status)
-            // console.log("location", response.headers.get('Location'))
             // window.location.href = response.headers.get('Location'); // при обычной отправке статуса в Go, локация не передается
             window.location.href = "/"; // редирект
         }
         else {
+            alert("Не верная почта или пароль.");
             throw new Error('login response was not ok');
         }
+    }
+    if (response.ok) {
+        const responseData = await response.json();
+        localStorage.setItem('token', responseData.token); // сохранение JWT токена в локальном хранилище у клиента
+        window.location.href = "/"; // редирект
     }
 
 });
 
-// кнопка создать в форме регистрацииаккаунт
+// кнопка создать в форме регистрации аккаунта
 const buttonRegAccount = document.getElementById("reg-button");
 buttonRegAccount.addEventListener('click', async function () // обработчик нажатия кнопки
 {
@@ -71,19 +75,23 @@ buttonRegAccount.addEventListener('click', async function () // обработч
     formData.append("nickname", nickname);
     formData.append("password", password1);
 
-    const response = await fetch('/api/register',
-{method: 'POST', body: formData});
-    if (!response.ok) {
-        throw new Error('getTasks response was not ok');
-    }
+    const response = await fetch('/register',
+    {method: 'POST', body: formData});
 
-    // response.text().then(result => {
-    //     console.log("result: ", result);
-    //     if(result === "failed") { // успешный логин
-    //         console.log("Вход не выполнен");
-    //     }
-        // else { // logged in success and render page
-        //     document.body.innerHTML = html;
-        // }
-    // });
+    if (!response.ok) {
+        if (response.status >= 300 && response.status < 400) { // редирект после входа
+            console.log("status", response.status)
+            // window.location.href = response.headers.get('Location'); // при обычной отправке статуса в Go, локация не передается
+            window.location.href = "/"; // редирект
+        }
+        else {
+            alert("Аккаунт с такой почтой уже существует.");
+            throw new Error('login response was not ok');
+        }
+    }
+    if (response.ok) {
+        const responseData = await response.json();
+        localStorage.setItem('token', responseData.token); // сохранение JWT токена в локальном хранилище у клиента
+        window.location.href = "/"; // редирект
+    }
 });
